@@ -1,0 +1,36 @@
+# SearXNG data and cache
+searxng/data/*
+!searxng/data/.gitkeep
+
+# Node modules
+searxng-mcp-bridge/node_modules/
+searxng-mcp-bridge/build/
+searxng-mcp-bridge/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Claude Code
+.claude/
+
+# OS
+Thumbs.db

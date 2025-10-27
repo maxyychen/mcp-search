@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./searxng/config:/etc/searxng
+      - ./searxng/data:/var/cache/searxng
+    environment:
+      - SEARXNG_BIND_ADDRESS=0.0.0.0:8080
+    dns:
+      - 8.8.8.8
+    restart: unless-stopped
+    networks:
+      - searxng-network
+
+  searxng-mcp-bridge:
+    build:
+      context: ./searxng-mcp-bridge
+      dockerfile: Dockerfile
+    container_name: searxng-mcp-bridge
+    ports:
+      - "8081:8081"
+    environment:
+      - TRANSPORT=http
+      - PORT=8081
+      - HOST=0.0.0.0
+      - SEARXNG_INSTANCE_URL=http://searxng:8080
+      - NODE_ENV=production
+    depends_on:
+      - searxng
+    restart: unless-stopped
+    networks:
+      - searxng-network
+
+networks:
+  searxng-network:
+    driver: bridge
