@@ -201,6 +201,16 @@ docker exec -it searxng-mcp-bridge sh
 - [SearXNG MCP Bridge](https://github.com/nitish-raj/searxng-mcp-bridge)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 
+## Acknowledgments
+
+Special thanks to:
+
+- The [SearXNG team](https://github.com/searxng/searxng) for creating and maintaining this excellent privacy-respecting metasearch engine that empowers users to search the web without being tracked.
+
+- [@nitish-raj](https://github.com/nitish-raj) for creating and maintaining the [SearXNG MCP Bridge](https://github.com/nitish-raj/searxng-mcp-bridge), which makes it possible to integrate SearXNG with the Model Context Protocol ecosystem.
+
+We appreciate the open-source community's contributions to both projects, making privacy-focused search accessible to everyone.
+
 ## License
 
 See individual component licenses:
