@@ -1,0 +1,16 @@
+# Core dependencies
+httpx>=0.25.0
+pyyaml>=6.0.1
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+
+# Ollama integration
+ollama>=0.1.0
+
+# CLI and utilities
+rich>=13.0.0
+prompt-toolkit>=3.0.0
+
+# Async support
+asyncio>=3.4.3
+aiofiles>=23.0.0
