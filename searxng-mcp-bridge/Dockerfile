@@ -1,0 +1,27 @@
+# Dockerfile for SearXNG MCP Bridge
+FROM node:lts-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy necessary files for installing dependencies and building the project
+COPY package.json package-lock.json tsconfig.json ./
+COPY src ./src
+
+# Install dependencies without running prepare scripts
+RUN npm ci --ignore-scripts
+
+# Build the project explicitly
+RUN npm run build
+
+# Copy remaining files if needed
+COPY . .
+
+# Set node environment
+ENV NODE_ENV=production
+
+# Expose port 8081 for HTTP transport
+EXPOSE 8081
+
+# Default command to start the MCP server
+CMD ["node", "build/index.js"]
