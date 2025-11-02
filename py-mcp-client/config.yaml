@@ -7,14 +7,21 @@ mcp_server:
     sse: "/mcp/v1/sse"
   timeout: 30
 
-# Ollama Configuration
+# LLM Configuration (supports both Ollama and vLLM)
+# Set backend to "ollama" or "vllm"
 ollama:
-  base_url: "http://localhost:11434"
-  model: "gpt-oss:20b"
+  backend: "vllm"  # Options: "ollama" or "vllm"
+  base_url: "http://localhost:8000"  # For Ollama: 11434, For vLLM: 8000
+  model: "openai/gpt-oss-20b"
   temperature: 0.7
   num_ctx: 4096
   top_p: 0.9
   timeout: 120
+
+  # Example for vLLM:
+  # backend: "vllm"
+  # base_url: "http://localhost:8000"
+  # model: "your-vllm-model-name"
 
 # Chatbot Settings
 chatbot:
@@ -23,9 +30,12 @@ chatbot:
     You are a helpful AI assistant with access to web search capabilities via MCP (Model Context Protocol).
     You can help users search the internet for information using SearXNG, a privacy-respecting metasearch engine.
 
-    When users ask questions or request information, use the search tool to find relevant, up-to-date information.
-    Always explain what you're searching for and present the results clearly and concisely.
-    Cite your sources and provide links when available.
+    IMPORTANT TOOL USAGE INSTRUCTIONS:
+    1. When users ask questions requiring current information, call the search tool ONCE with an appropriate query
+    2. After receiving search results, analyze them and provide a comprehensive answer to the user
+    3. Do NOT call the search tool multiple times in a row - call it once, then answer based on the results
+    4. Always cite your sources and provide links when available from the search results
+    5. If the search results don't fully answer the question, provide the best answer you can from what was found
   max_history: 10
   show_tool_calls: true
 

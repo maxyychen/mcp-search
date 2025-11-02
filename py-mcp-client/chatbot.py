@@ -18,7 +18,7 @@ from ollama_client import OllamaClient
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for more verbose output
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -49,7 +49,8 @@ class MCPChatbot:
             model=self.config['ollama']['model'],
             temperature=self.config['ollama']['temperature'],
             num_ctx=self.config['ollama']['num_ctx'],
-            timeout=self.config['ollama']['timeout']
+            timeout=self.config['ollama']['timeout'],
+            backend=self.config['ollama'].get('backend', 'ollama')
         )
 
         # Chat history
@@ -216,22 +217,34 @@ class MCPChatbot:
 
         max_iterations = 5
         iteration = 0
+        last_tool_call = None  # Track last tool call to detect loops
 
         while iteration < max_iterations:
             iteration += 1
+            logger.info(f"Tool iteration {iteration}/{max_iterations}")
 
             # Get response from LLM with tools
             try:
                 response = self.ollama_client.chat(self.messages, tools=self.ollama_tools)
                 message = response["message"]
+                logger.debug(f"LLM response: {message}")
             except Exception as e:
                 logger.error(f"Ollama chat failed: {e}")
                 return f"Error: Failed to get response from LLM - {str(e)}"
 
             # Check for native tool calls
             tool_calls = message.get("tool_calls")
+            logger.debug(f"Tool calls detected: {tool_calls}")
 
             if tool_calls:
+                # Check for duplicate tool calls (loop detection)
+                current_tool_signature = json.dumps(tool_calls, sort_keys=True)
+                if current_tool_signature == last_tool_call:
+                    logger.warning("Detected repeated tool call - breaking loop")
+                    return "I apologize, but I'm having trouble completing this request. The search tool seems to be in a loop. Please try rephrasing your question."
+
+                last_tool_call = current_tool_signature
+
                 # Add assistant message with tool calls to history
                 self.messages.append(message)
 
@@ -241,25 +254,43 @@ class MCPChatbot:
                     tool_name = function.get("name")
                     tool_args = function.get("arguments", {})
 
+                    # Parse arguments if they're a JSON string (OpenAI/vLLM format)
+                    if isinstance(tool_args, str):
+                        try:
+                            tool_args = json.loads(tool_args)
+                        except json.JSONDecodeError:
+                            logger.error(f"Failed to parse tool arguments: {tool_args}")
+                            tool_args = {}
+
                     # Execute tool
                     tool_result = self._execute_tool(tool_name, tool_args)
 
                     # Add tool result to history
-                    self.messages.append({
+                    # For vLLM/OpenAI compatibility, include tool_call_id
+                    tool_result_message = {
                         "role": "tool",
                         "content": tool_result
-                    })
+                    }
+
+                    # Add tool_call_id if available (for OpenAI/vLLM format)
+                    if "id" in tool_call:
+                        tool_result_message["tool_call_id"] = tool_call["id"]
+
+                    self.messages.append(tool_result_message)
+                    logger.info(f"Added tool result to history for {tool_name}")
 
                 # Continue loop to get next response
                 continue
             else:
                 # No tool calls, check if there's a text response
                 assistant_message = message.get("content", "")
+                logger.info(f"No tool calls. Assistant message: {assistant_message[:100]}...")
 
-                # Fallback: check for JSON-based tool calls in text
+                # Fallback: check for JSON-based tool calls in text (for models that don't use proper tool_calls)
                 if assistant_message:
                     text_tool_call = self._extract_tool_call(assistant_message)
                     if text_tool_call:
+                        logger.info(f"Found text-based tool call: {text_tool_call['tool']}")
                         # Execute tool
                         tool_result = self._execute_tool(
                             text_tool_call["tool"],
@@ -277,9 +308,17 @@ class MCPChatbot:
                         continue
 
                 # No tool calls, this is the final response
-                self.messages.append({"role": "assistant", "content": assistant_message})
-                return assistant_message
+                if assistant_message:
+                    self.messages.append({"role": "assistant", "content": assistant_message})
+                    logger.info("Returning final assistant response")
+                    return assistant_message
+                else:
+                    # Empty response - this shouldn't happen, but handle it
+                    logger.warning("Empty assistant response received")
+                    self.messages.append({"role": "assistant", "content": ""})
+                    return "I apologize, but I didn't generate a response. Please try again."
 
+        logger.warning(f"Maximum tool iterations ({max_iterations}) reached")
         return "Maximum tool iterations reached. Please try rephrasing your request."
 
     def run(self):
@@ -291,7 +330,9 @@ class MCPChatbot:
         self.console.print("\n" + "="*70)
         self.console.print(Panel.fit(
             f"[bold green]{self.config['chatbot']['name']}[/bold green]\n"
+            f"Backend: {self.ollama_client.backend.upper()}\n"
             f"Model: {self.ollama_client.model}\n"
+            f"Base URL: {self.ollama_client.base_url}\n"
             f"MCP Server: {self.mcp_client.base_url}\n\n"
             "[dim]Type 'quit', 'exit', or press Ctrl+C to exit\n"
             "Type 'clear' to clear conversation history\n"
