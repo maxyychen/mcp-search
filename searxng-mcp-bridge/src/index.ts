@@ -457,10 +457,10 @@ class SearxngBridgeServer {
 
       const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
-      // Rate limiting for POST /mcp - 100 requests per 60 seconds per IP
+      // Rate limiting for POST /mcp - 1000 requests per 60 seconds per IP
       const mcpRateLimit = rateLimit({
         windowMs: 60 * 1000, // 60 seconds
-        limit: 100, // 100 requests per windowMs
+        limit: 1000, // 1000 requests per windowMs
         standardHeaders: 'draft-7', // draft-6: RateLimit-* headers; draft-7: combined RateLimit and Limit headers
         legacyHeaders: false, // Disable X-RateLimit-* headers
         message: {

@@ -39,3 +39,4 @@ services:
 networks:
   searxng-network:
     driver: bridge
+
